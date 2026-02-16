@@ -44,7 +44,7 @@ Reference Manual -> RCC Chapter -> Clock Tree Diagram
 
 ## Step 2 - Enable GPIOC Clock
 From the RCC section:
-![alt text](rcc_enr.png)
+![alt text](images/rcc_enr.png)
 
 Register: **RCC_APB2ENR**
 Bit 4: **IOPCEN** (I/O Port C clock enable)
@@ -70,10 +70,10 @@ This sets bit 4 and turns on the clock for Port C.
 In STM32F1, GPIO configuration is split into:
 
 CRL → Pins 0–7
-![alt text](gpio_crl.png)
+![alt text](images/gpio_crl.png)
 
 CRH → Pins 8–15
-![alt text](gpio_crh.png)
+![alt text](images/gpio_crh.png)
 
 **PC13** is in **CRH**.
 
@@ -96,7 +96,7 @@ CNF[1:0]
 For PC13:
 Bits 23:20
 
-![alt text](23-13.png)
+![alt text](images/23-13.png)
 
 From the GPIO configuration table:
 
