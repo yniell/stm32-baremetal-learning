@@ -6,5 +6,7 @@ This repository documents my progress in learning register-level firmware develo
 The goal is to understand how peripherals work internally by programming them directly through memory-mapped registers — without using HAL or high-level abstraction layers.
 
 MCU: STM32F103C8T6
+
 Approach: Direct register manipulation
+
 Primary reference: RM0008 Reference Manual
