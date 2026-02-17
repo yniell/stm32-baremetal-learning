@@ -39,32 +39,27 @@ In STM32F103, peripherals are connected to different internal buses:
 
 And the GPIO is connnected to APB2. *This is fixed in hardware. We can't change which bus a peripheral belongs to.*
 
-To confirm this: 
-Reference Manual -> RCC Chapter -> Clock Tree Diagram
+The base addresses, each corresponding peripherals, and bus can be found in **Memory Map** section of the Reference Manual.
 
 ## Step 2 - Enable GPIOC Clock
 From the RCC section:
 ![alt text](images/rcc_enr.png)
 
-Register: **RCC_APB2ENR**
-Bit 4: **IOPCEN** (I/O Port C clock enable)
+Since our first step is to enable the GPIOC Clock, we need to find the "APB2 peripheral clock enable register", which is `RCC_APB2ENR`. We can see from the picture that above `IOPCEN` is a number "4". That number is what we call "bit".
 
-Base address of RCC:
-**0x40021000**
+Now, we defined Bit 4: `IOPCEN` (I/O Port C clock enable). And from the memory map section, we defined that the base address of the RCC is `0x40021000`. From the picture, we can see that the offset of APB2ENR is `0x18`. So:
 
-Offset of APB2ENR:
-**0x18**
+0x40021000 + 0x18 = `0x40021018`
 
-So:
-0x40021000 + 0x18 = **0x40021018**
+Then, we define it in C:
 
-Define in C:
-#define RCC_APB2ENR (*(volatile unsigned int*)0x40021018)
+`#define RCC_APB2ENR (*(volatile unsigned int*)0x40021018)`
 
-Enable GPIOC:
-RCC_APB2ENR |= (1 << 4);
+And to enable GPIOC:
 
-This sets bit 4 and turns on the clock for Port C.
+`RCC_APB2ENR |= (1 << 4);`
+
+This sets `bit 4` and turns on the clock for Port C.
 
 ## Step 3 - Configure PC13 as Output
 In STM32F1, GPIO configuration is split into:
@@ -77,56 +72,66 @@ CRH → Pins 8–15
 
 **PC13** is in **CRH**.
 
-GPIOC base address:
-**0x40011000**
+From the memory map, we can see that the GPIOC base address is `0x40011000`. In the GPIO registers section, we can find the Port Configuration Register, and in the CRH section, we can see that its offset is `0x04`.
 
-CRH offset:
-**0x04**
+So: 0x40011000 + 0x04 = `0x40011004`
 
-So:
-0x40011000 + 0x04 = **0x40011004**
+And we define it in C:
 
-and we define it in C:
-#define GPIOC_CRH (*(volatile unsigned int*)0x40011004)
+`#define GPIOC_CRH (*(volatile unsigned int*)0x40011004)`
 
-Each pin uses 4 bits:
-MODE[1:0]
-CNF[1:0]
+In the picture below, we can see that each pin uses 4 bits:
+
+`MODE[1:0]`
+
+`CNF[1:0]`
 
 For PC13:
-Bits 23:20
+
+`Bits 23:20`
 
 ![alt text](images/23-13.png)
 
 From the GPIO configuration table:
 
 Output push-pull, 2MHz:
-MODE = 10
-CNF = 00
+
+`MODE = 10`
+
+`CNF = 00`
+
+For STM32F1, each pin uses 4 bits arranged as:
+
+`CNF[1:0] MODE[1:0]`
 
 Binary: 0010
+
 Hex: 0x2
 
 First clear those 4 bits:
-GPIOC_CRH &= ~(0xF << 20);
+
+`GPIOC_CRH &= ~(0xF << 20);`
 
 Then set the desired value:
-GPIOC_CRH |= (0x2 << 20);
+
+`GPIOC_CRH |= (0x2 << 20);`
 
 ## Step 4
-ODR (Output Data Register) offset:
-**0x0C**
+ODR (Output Data Register) offset: `0x0C`
 
-0x40011000 + 0x0C = **0x4001100C**
+0x40011000 + 0x0C = `0x4001100C`
 
 Define in C:
-#define GPIOC_ODR (*(volatile unsigned int*)0x4001100C)
+
+`#define GPIOC_ODR (*(volatile unsigned int*)0x4001100C)`
 
 Toggle bit 13:
-GPIOC_ODR ^= (1 << 13);
+
+`GPIOC_ODR ^= (1 << 13);`
 
 ### Full Code:
 
+```
 #define RCC_APB2ENR (*(volatile unsigned int*)0x40021018)
 
 #define GPIOC_CRH   (*(volatile unsigned int*)0x40011004)
@@ -148,26 +153,32 @@ int main(void)
         for (volatile int i = 0; i < 500000; i++);
     }
 }
-
+```
 
 ## Understanding the Code (These notes are partially based on external explanations. I’m still reviewing and rewriting them in my own words as I go.)
 ### What this line really means:
-#define RCC_APB2ENR (*(volatile unsigned int*)0x40021018)
 
-1. **0x40021018** is the address we calculated above.
-2. **(volatile unsigned int*)** means that the address next to it will be treated as a pointer to a 32-bit unsigned register.
-- **unsigned int** -> 32-bit register
-- "*" -> pointer
-- **(volatile ...)** -> it tells the compiler that it should not be optimized since the value may change outside the program. *Without the **volatile**, the compiler might remove hardware access.
-3. "*(...)" -> the "*" dereferences the pointer. So now, the **RCC_APB2ENR** acts like a real variable, *but it isn't a variable*. It is directly connected to the hardware.
+`#define RCC_APB2ENR (*(volatile unsigned int*)0x40021018)`
+
+1. `0x40021018` is the address we calculated above.
+2. `(volatile unsigned int*)` means that the address next to it will be treated as a pointer to a 32-bit unsigned register.
+- `unsigned int` -> 32-bit register
+- `*` -> pointer
+- `(volatile ...)` -> it tells the compiler that it should not be optimized since the value may change outside the program. *Without the **volatile**, the compiler might remove hardware access.
+3. `*(...)` -> the "*" dereferences the pointer. So now, the **RCC_APB2ENR** acts like a real variable, *but it isn't a variable*. It is directly connected to the hardware.
 
 ### Enabling GPIO Clock
-RCC_APB2ENR |= (1 << 4);
 
-1. **(1 << 4)** means:
-take binary **0001** and shift left by 4 bits. The result should be: **0001 0000**. *That is bit 4*, Bit 4 = IOPCEN, which means: **Enable Port C clock**
-2. "|=" means: 
+`RCC_APB2ENR |= (1 << 4);`
+
+1. `(1 << 4)` means take binary `0001` and shift left by 4 bits. The result should be: `0001 0000`. *That is bit 4*
+
+Bit 4 = `IOPCEN`, which means: **Enable Port C clock**
+
+2. `|=` means:
+
 read register -> OR with mask -> write back
+
 So it keeps other bit unchanged and only sets bit 4. *If we used "=", we would erase other clock enables.*
 
 ### Configuring PC13
