@@ -9,18 +9,16 @@ I’m using this project to understand how the microcontroller actually works un
 ## Acknowledgement
 Before anything, I'd like to mention and thank this guide: https://github.com/cpq/bare-metal-programming-guide 
 
-It helped me understand the structure of bare-metal programming. In addition to that, I used the reference manual and other sources for deeper understanding.
+It helped me understand the structure of bare-metal programming. In addition to that, I used the reference manual and other sources for deeper understanding. The guide also provides the tools setup that will be needed.
 
 ## Required Documents
 There are two documents we need, before proceeding with the code:
-1. **Datasheet**
-It includes:
+1. **Datasheet**:
 - Electrical Characteristics
 - Pinout
 - Memory sizes
 
-2. **Reference Manual (RM0008)**
-It includes:
+2. **Reference Manual (RM0008)**:
 - Peripheral registers
 - Registers addresses
 - Bit descriptions
@@ -29,13 +27,13 @@ It includes:
 
 *The reference manual is heavily used*
 
-3. **Essential Files**
+3. **Essential Files**:
 - C code
 - Startup code
 - Linker script
 - Makefile
 
-4. **Hardware**
+4. **Hardware**:
 - STM32F103C8T6 (Blue Pill)
 - ST-Link V2 programmer
 
@@ -50,58 +48,67 @@ The Microcontroller(MCU) is a small computer on a single chip. Unlike a desktop,
 
 All in one package.
 
-- **CPU Core** executes instructions in a simple cycle:
-    1. Fetch instruction from memory
-    2. Decode instruction
-    3. Execute instruction
-    4. Repeat
+### CPU Core 
+It executes instructions in a simple cycle:
+1. Fetch instruction from memory
+2. Decode instruction
+3. Execute instruction
+4. Repeat
 
 This is called the fetch-decode-execute cycle
 
-- **Registers** Registers are small, extremely fast storage locations inside the CPU. *They are not RAM*, They are inside the processor itself. There are two types:
-    1. **General Purpose Registers** are used for storing temporary values, performing arithmetic, passing function arguments.
-    2. **Special Registers** controls the CPU behavior.
-        - **Program Counter (PC)** holds the address of the next instruction, and automatically updates after each instruction.
-        - **Stack Pointer (SP)** points to the top of the stack, and used for function calls and local variables.
-        - **Link Register (LR) (ARM)** stores return address during function calls.
-        - **Status Register** contains flags like: zero, negative, carry, overflow
+### Registers 
+Registers are small, extremely fast storage locations inside the CPU. *They are not RAM*, They are inside the processor itself. There are two types:
+1. **General Purpose Registers** are used for storing temporary values, performing arithmetic, passing function arguments.
+2. **Special Registers** controls the CPU behavior.
+   - **Program Counter (PC)** holds the address of the next instruction, and automatically updates after each instruction.
+   - **Stack Pointer (SP)** points to the top of the stack, and used for function calls and local variables.
+   - **Link Register (LR) (ARM)** stores return address during function calls.
+   - **Status Register** contains flags like: zero, negative, carry, overflow
 
-- **The Stack** is used for function calls, local variables, saving registers, and interrupt handling. The stack works as LIFO (Last In, First Out). Typical stack behavior (descending stack):
+### The Stack
+The stack is used for function calls, local variables, saving registers, and interrupt handling. The stack works as LIFO (Last In, First Out). Typical stack behavior (descending stack):
 ```
 PUSH → SP decreases
 POP  → SP increases
 ```
-- **Memory-Mapped I/O and Peripherals**. Peripherals are hardware modules for interacting with the outside world. Microcontrollers use memory-mapped I/O. That means peripherals are controlled by writing to specific memory addresses.
+### Memory-Mapped I/O and Peripherals 
+Peripherals are hardware modules for interacting with the outside world. Microcontrollers use memory-mapped I/O. That means peripherals are controlled by writing to specific memory addresses.
 
-- **What happens at Reset?** When the microcontroller resets:
-    1. The Stack Pointer is initialized
-    2. Program Counter is loaded with reset handler address
-    3. Reset handler runs
-    4. The main() function is called
+### What happens at Reset?
+When the microcontroller resets:
+1. The Stack Pointer is initialized
+2. Program Counter is loaded with reset handler address
+3. Reset handler runs
+4. The main() function is called
 
 In bare-metal, we usually write or control:
-    - Startup code
-    - Vector table
-    - Linker script
+- Startup code
+- Vector table
+- Linker script
 
-- **Interrupts**:
-    - Stops normal execution
-    - Saves CPU context to stack
-    - Jumps to interrupt handler
-    - Returns to previous code
-    Used for:
-    - Timers
-    - UART receive
-    - GPIO events
-    - ADC completion
+### Interrupts
+- Stops normal execution
+- Saves CPU context to stack
+- Jumps to interrupt handler
+- Returns to previous code
+
+Used for:
+- Timers
+- UART receive
+- GPIO events
+- ADC completion
 
 Interrupts rely heavily on the stack pointer.
 
-- **Volatile**. When we are accessing hardware registers, `volatile` tells the compiler that a variable may change outside the program’s control, so every read and write must actually access memory and must not be optimized away.
+### Volatile
+When we are accessing hardware registers, `volatile` tells the compiler that a variable may change outside the program’s control, so every read and write must actually access memory and must not be optimized away.
 
-- **Flash Memory** is a non-volatile memory that stores our program and constant data inside the microcontroller.
+### Flash Memory
+It is a non-volatile memory that stores our program and constant data inside the microcontroller.
 
-- **RAM** is a temporary working memory (stack, heap, variables)
+### RAM
+It is a temporary working memory (stack, heap, variables)
 
 ## Step 1 - Clock
 A microcontroller needs a clock to run. If the clock for a peripheral is not enabled, **the registers still exist in memory, but writing to them does nothing**. So before we touch the GPIO, its clock must be enabled.
@@ -413,19 +420,25 @@ Microcontrollr typically require a raw binary to flash. This converts `blink.elf
 # Trying it on my board 
 Now that the important files are complete (`main.c`, `startup.s`, `stm32f103.ld`, and `Makefile`), we can now blink the PC13. We need our board, I will be using `STM32F103C8T6` or the `Blue Pill`, and a `ST-Link V2 Programmer`.
 
-Blue Pill
+### Blue Pill
+
 ![alt text](images/bluepill.png)
 
-ST-Link V2 Programmer
+### ST-Link V2 Programmer
+
 ![alt text](images/stlink.png)
 
 ## Wiring
 The Blue Pill contains four slots, which are labeled `3V3`, `SWIO`, `SWCLK`, and `GND`. The ST-Link has 10 slots, but we are only going to use four for this process. 
 
-Blue Pill              ST-Link
+Blue Pill -----------> ST-Link
+
 `3V3` ---------------> `3.3V`
+
 `SWIO` --------------> `SWDIO`
+
 `SWCLK` -------------> `SWCLK`
+
 `GND` ---------------> `GND`
 
 ## BOOT 0 and BOOT 1 
@@ -446,7 +459,7 @@ Our files (`main.c`, `startup.s`, `stm32f103.ld`, and `Makefile`) are completed.
 
 `st-flash write blink.bin 0x08000000`
 
-![alt text](led.png)
+![alt text](images/led.png)
 
 In the picture, the green light is the PC13 and it should be blinking after we Flash it.
 
