@@ -345,6 +345,36 @@ Reset_Handler:
 `bl main` calls `main ()`. `b .` creates an infinite loop in case `main ()` ever returns.
 
 ## Linker Script (stm32f103.ld)
+```
+ENTRY(Reset_Handler)
+
+MEMORY
+{
+  FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 128K
+  RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 20K
+}
+
+SECTIONS
+{
+  .text :
+  {
+    KEEP(*(.isr_vector))
+    *(.text*)
+    *(.rodata*)
+  } > FLASH
+
+  .data :
+  {
+    *(.data*)
+  } > RAM
+
+  .bss :
+  {
+    *(.bss*)
+    *(COMMON)
+  } > RAM
+}
+```
 The Linker Script tells the compiler where the flash starts, where the RAM starts, where to place code, and where to place variables. Example:
 ```
 FLASH (rx)  : ORIGIN = 0x08000000, LENGTH = 128K
@@ -359,6 +389,22 @@ Then:
 So the code goes to Flash, variables go to RAM. Without this file, the program wouldn't know where to live in memory.
 
 ## Makefile
+```
+CC=arm-none-eabi-gcc
+OBJCOPY=arm-none-eabi-objcopy
+CFLAGS=-mcpu=cortex-m3 -mthumb -nostdlib -Wall
+
+all: blink.bin
+
+blink.elf: startup.s main.c
+	$(CC) $(CFLAGS) -T stm32f103.ld startup.s main.c -o blink.elf
+
+blink.bin: blink.elf
+	$(OBJCOPY) -O binary blink.elf blink.bin
+
+clean:
+	rm -f *.elf *.bin
+```
 This project uses `make` to:
 - Compile C and assembly files
 - Link them into an ELF executable
