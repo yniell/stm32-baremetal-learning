@@ -29,6 +29,7 @@ It includes:
 
 *The reference manual is heavily used*
 
+<<<<<<< HEAD
 3. **Essential Files**
 - C code
 - Startup code
@@ -103,6 +104,8 @@ Interrupts rely heavily on the stack pointer.
 
 - **RAM** is a temporary working memory (stack, heap, variables)
 
+=======
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
 ## Step 1 - Clock
 A microcontroller needs a clock to run. If the clock for a peripheral is not enabled, **the registers still exist in memory, but writing to them does nothing**. So before we touch the GPIO, its clock must be enabled.
 
@@ -144,7 +147,11 @@ CRL → Pins 0–7
 CRH → Pins 8–15
 ![alt text](images/gpio_crh.png)
 
+<<<<<<< HEAD
 Since **PC13** is pin 13, it is configured using **CRH**.
+=======
+**PC13** is in **CRH**.
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
 
 From the memory map, we can see that the GPIOC base address is `0x40011000`. In the GPIO registers section, we can find the Port Configuration Register, and in the CRH section, we can see that its offset is `0x04`.
 
@@ -156,9 +163,19 @@ And we define it in C:
 
 In the picture below, we can see that each pin uses 4 bits:
 
+<<<<<<< HEAD
 `CNF[1:0] MODE[1:0]`
 
 For PC13: `Bits 23:20`
+=======
+`MODE[1:0]`
+
+`CNF[1:0]`
+
+For PC13:
+
+`Bits 23:20`
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
 
 ![alt text](images/23-13.png)
 
@@ -170,6 +187,13 @@ Output push-pull, 2MHz:
 
 `CNF = 00`
 
+<<<<<<< HEAD
+=======
+For STM32F1, each pin uses 4 bits arranged as:
+
+`CNF[1:0] MODE[1:0]`
+
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
 Binary: 0010
 
 Hex: 0x2
@@ -182,6 +206,7 @@ Then set the desired value:
 
 `GPIOC_CRH |= (0x2 << 20);`
 
+<<<<<<< HEAD
 ## Step 4 - Controlling the Output using BSRR
 
 Instead of toggling ODR directly, this project uses the Bit Set/Reset Register (BSRR). BSRR is preferred because:
@@ -234,11 +259,28 @@ It is used here only for demonstration purposes.
 
 ## C Program (main.c):
 After following all the steps, our full code for the `main.c` is complete:
+=======
+## Step 4
+ODR (Output Data Register) offset: `0x0C`
+
+0x40011000 + 0x0C = `0x4001100C`
+
+Define in C:
+
+`#define GPIOC_ODR (*(volatile unsigned int*)0x4001100C)`
+
+Toggle bit 13:
+
+`GPIOC_ODR ^= (1 << 13);`
+
+### Full Code:
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
 
 ```
 #define RCC_APB2ENR (*(volatile unsigned int*)0x40021018)
 
 #define GPIOC_CRH   (*(volatile unsigned int*)0x40011004)
+<<<<<<< HEAD
 #define GPIOC_BSRR  (*(volatile unsigned int*)0x40011010)
 
 void delay(volatile unsigned int t)
@@ -250,20 +292,37 @@ int main(void)
 {
     RCC_APB2ENR |= (1 << 4);
 
+=======
+#define GPIOC_ODR   (*(volatile unsigned int*)0x4001100C)
+
+int main(void)
+{
+    // Enable GPIOC clock
+    RCC_APB2ENR |= (1 << 4);
+
+    // Configure PC13 as output push-pull 2MHz
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
     GPIOC_CRH &= ~(0xF << 20);
     GPIOC_CRH |=  (0x2 << 20);
 
     while (1)
     {
+<<<<<<< HEAD
         GPIOC_BSRR = (1 << (13 + 16));  // LED ON
         delay(500000);
 
         GPIOC_BSRR = (1 << 13);        // LED OFF
         delay(500000);
+=======
+        GPIOC_ODR ^= (1 << 13);
+
+        for (volatile int i = 0; i < 500000; i++);
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
     }
 }
 ```
 
+<<<<<<< HEAD
 ## Big Picture
 Now that we have our `main.c` which contains our actual blinking code, we will proceed with the other files (linker script, startup code, and Makefile) and explain why these files are important. For the bigger picture, when the microcontroller powers up:
 
@@ -458,3 +517,85 @@ That sums it up. This simple project helped me understand:
 4. How the toolchain (Makefile, linker script, startup file) all works together
 
 *Note: I initially used `ODR` register to toggle PC13 but I could not make it work correctly. Probably I made mistakes in the read-modify-write logic. Anyway, I searched if there is a way to fix this, and found an alternative method which is using `BSRR`. This was also a nice learning moment for me to understand the difference of this two.*
+=======
+## Understanding the Code (These notes are partially based on external explanations. I’m still reviewing and rewriting them in my own words as I go.)
+### What this line really means:
+
+`#define RCC_APB2ENR (*(volatile unsigned int*)0x40021018)`
+
+1. `0x40021018` is the address we calculated above.
+2. `(volatile unsigned int*)` means that the address next to it will be treated as a pointer to a 32-bit unsigned register.
+- `unsigned int` -> 32-bit register
+- `*` -> pointer
+- `(volatile ...)` -> it tells the compiler that it should not be optimized since the value may change outside the program. *Without the **volatile**, the compiler might remove hardware access.
+3. `*(...)` -> the "*" dereferences the pointer. So now, the **RCC_APB2ENR** acts like a real variable, *but it isn't a variable*. It is directly connected to the hardware.
+
+### Enabling GPIO Clock
+
+`RCC_APB2ENR |= (1 << 4);`
+
+1. `(1 << 4)` means take binary `0001` and shift left by 4 bits. The result should be: `0001 0000`. *That is bit 4*
+
+Bit 4 = `IOPCEN`, which means: **Enable Port C clock**
+
+2. `|=` means:
+
+read register -> OR with mask -> write back
+
+So it keeps other bit unchanged and only sets bit 4. *If we used "=", we would erase other clock enables.*
+
+### Configuring PC13
+GPIOC_CRH &= ~(0xF << 20);
+
+This clears bits 23:20. Why? 
+
+Each pin uses 4 bits. PC13 uses bits 23:20.
+
+0xF
+Hex F = binary 1111
+
+Shift left 20:
+1111 << 20
+*Moves it into position of PC13.*
+
+The "~" inverts it, so the **1111** becomes **0000**, now we "AND" it:
+GPIOC_CRH &= ...
+*This clears only 4 bits*
+
+Now set the new value:
+GPIOC_CRH |= (0x2 << 20);
+0x2 = 0010
+
+Which means:
+MODE = 10 (Output 2MHz)
+CNF = 00 (Push-pull)
+
+Shift to bits 23:20 and OR it in.
+
+Now PC13 is configured as output.
+
+### Toggling the LED
+GPIOC_ODR ^= (1 << 13);
+
+This is XOR.
+
+XOR flips a bit.
+
+If bit was 0 → becomes 1
+If bit was 1 → becomes 0
+
+So LED keeps toggling.
+
+### The Delay
+for (volatile int i = 0; i < 500000; i++);
+
+*This is just a crude delay.*
+
+Not accurate.
+Depends on clock speed.
+Not recommended for real firmware.
+
+But good for learning.
+
+# Trying it on my board (This part is also still incomplete. Once I completely understand the code, I will be proceeding with the actual)
+>>>>>>> 24dfc45c334ed4dbeac517e51213526e0b61e0ee
