@@ -141,7 +141,14 @@ Decimal: 16. So in our code:
 
 `RCC_APB2ENR |= (1 << 4);`
 
-This creates a mask:
+The reset value of `RCC_APB2ENR` is `0x0000 0000` which means:
+
+`00000000 00000000 00000000 00000000`
+
+And the 1 in binary means:
+`00000000 00000000 00000000 00000001`
+
+Then we shift "1" to left "4" times  `(1 << 4)`. This creates a mask:
 
 `00000000 00000000 00000000 00010000`
 
@@ -170,6 +177,13 @@ Means:
 
 `RCC_APB2ENR = RCC_APB2ENR | (1 << 4);`
 
+So now we:
+```
+	00000000 00000000 00000000 00000000  --> Reset value of RCC_APB2ENR Register
+OR	00000000 00000000 00000000 00010000  --> The shifted value
+-------------------------------------------
+	00000000 00000000 00000000 00010000  --> Result
+```
 This turns ON bit 4 and leave everything else unchanged.
 
 ## Bitwise AND &
@@ -181,6 +195,26 @@ Rule:
 ```
 It keeps bits that are 1 in both numbers
 
+In `GPIOC_CRH &= ~(0xF << 20);`, the reset value of `GPIOC_CRH` is `0x4444 4444`, and each "4" is binary `4 = 0100` so we get:
+
+`01000100 01000100 01000100 01000100` ---> GPIOC_CRH
+
+Note that `0100` means 
+
+```
+CNF = 01
+MODE = 00
+```
+Which corresponds to "Floating Input" *will be discussed later*
+
+Then in `(0xF << 20)`, `0xF` = Hex F = Binary: `1111` so:
+
+`00000000 00000000 00000000 00001111` then we shift the `1111` to "20" times left:
+
+`00000000 11110000 00000000 00000000` is the result
+
+This selects the 4 configuration bits for pin 13.
+
 ## Bitwise NOT ~
 It flips all bits. Example:
 ```
@@ -188,35 +222,27 @@ It flips all bits. Example:
 ~ it becomes
 11110000
 ```
+So for the previous result which is:
 
-## Clearing Bits (AND + NOT)
-In our code:
+`00000000 11110000 00000000 00000000`, if we applied NOT ~, it will be:
 
-`GPIOC_CRH &= ~(0xF << 20);`
-
-### Step 1: 0xF
-Hex F = binary: `1111`
-
-So: `0xF << 20` means:
-
-`00000000 11110000 00000000 00000000`
-
-This selects the 4 configuration bits for pin 13.
-
-### Step 2: ~
-Original mask:
-
-`00000000 11110000 00000000 00000000`
-
-After ~ :
-
-`11111111 00001111 11111111 11111111`
+`11111111 00001111 11111111 11111111` --> Result (mask)
 
 Now bits 23:20 are zero.
 
-### Step 3: AND with register
+## Clearing Bits (AND + NOT)
+In our code:
+```
+GPIOC_CRH &= ~(0xF << 20);
+GPIOC_CRH &= mask;
 
-`GPIOC_CRH &= mask;`
+	01000100 01000100 01000100 01000100 ---> GPIOC_CRH
+AND 11111111 00001111 11111111 11111111 ---> mask ~(0xF << 20)
+-------------------------------------------
+	01000100 00000100 01000100 01000100 = GPIOC_CRH
+
+Hex: 0x44044444
+```
 
 This clears bits 23:20 and leaves everything else untouched. This is how we reset only those 4 bits.
 
@@ -230,6 +256,15 @@ Shift left to 20:
 
 `00000000 00100000 00000000 00000000`
 
+So in `GPIOC_CRH |=  (0x2 << 20);` :
+```
+	01000100 00000100 01000100 01000100 = GPIOC_CRH
+OR	00000000 00100000 00000000 00000000 = mask (0x2 << 20)
+----------------------------------------------
+	01000100 00100100 01000100 01000100
+
+Hex: 0x44244444
+```
 Now, OR sets only those bits. The full sequence:
 ```
 GPIOC_CRH &= ~(0xF << 20); //Clear
