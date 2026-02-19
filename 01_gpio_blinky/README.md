@@ -110,6 +110,142 @@ It is a non-volatile memory that stores our program and constant data inside the
 ### RAM
 It is a temporary working memory (stack, heap, variables)
 
+## Bitwise Operators
+Before we proceed, we need first to understand bitwise operators since they are used in our embedded C code, for us to understand exactly what they are doing at the binary level. This is important in microcontroller programming since hardware registers are controlled bit by bit. For this section, I will be using code snippets from our `main.c`, which is covered below. 
+
+a hardware register is just a 32 bit number:
+
+`00000000 00000000 00000000 00000000`
+
+Each bit control something. Example:
+- `Bit 4` enables GPIOC clock
+- `Bits 23:20` configures PC13 mode
+- `Bit 13` controls output level
+
+So instead of changing the whole number, we change specific bits only. That's where bitwise operators come in.
+
+## Bitwise Left Shift
+syntax:
+
+`1 << n`
+
+This shifts the number 1 left by n positions. Example:
+
+`1 << 4`
+
+In binary:
+
+`00000001 ---> 00010000`
+
+Decimal: 16. So in our code: 
+
+`RCC_APB2ENR |= (1 << 4);`
+
+This creates a mask:
+
+`00000000 00000000 00000000 00100000`
+
+That mask targets bit 4 only.
+
+## Bitwise OR |
+```
+Rule:
+1 | 0 = 1
+1 | 1 = 1
+0 | 0 = 0
+```
+It sets bits to 1 without touching others. Example:
+```
+Register = 00000000
+Mask     = 00010000
+---------------------
+Result   = 00010000
+```
+
+So:
+
+`RCC_APB2ENR |= (1 << 4);`
+
+Means:
+
+`RCC_APB2ENR = RCC_APB2ENR | (1 << 4);`
+
+This turns ON bit 4 and leave everything else unchanged.
+
+## Bitwise AND &
+```
+Rule:
+1 & 1 = 1
+1 & 0 = 0
+0 & 0 = 0
+```
+It keeps bits that are 1 in both numbers
+
+## Bitwise NOT ~
+It flips all bits. Example:
+```
+00001111
+~ it becomes
+11110000
+```
+
+## Clearing Bits (AND + NOT)
+In our code:
+
+`GPIOC_CRH &= ~(0xF << 20);`
+
+### Step 1: 0xF
+Hex F = binary: `1111`
+
+So: `0xF << 20` means:
+
+`00000000 11110000 00000000 00000000`
+
+This selects the 4 configuration bits for pin 13.
+
+### Step 2: ~
+Original mask:
+
+`00000000 11110000 00000000 00000000`
+
+After ~ :
+
+`11111111 00001111 11111111 11111111`
+
+Now bits 23:20 are zero.
+
+### Step 3: AND with register
+
+`GPIOC_CRH &= mask;`
+
+This clears bits 23:20 and leaves everything else untouched. This is how we reset only those 4 bits.
+
+## Setting Specific Bits:
+
+`GPIOC_CRH |= (0x2 << 20);`
+
+`0x2` in binary: `0010`
+
+Shift left to 20:
+
+`00000000 00100000 00000000 00000000`
+
+Now, OR sets only those bits. The full sequence:
+```
+GPIOC_CRH &= ~(0xF << 20); //Clear
+GPIOC_CRH |= (0x2 << 20); //Set desired value
+```
+It means:
+Clear configuration and writes new configuration. This is the standard `read-modify-write` pattern.
+
+## Why |= and not = ?
+
+If we use `=`. we would destroy all other bits, and disable other peripherals.
+
+`BSRR` uses `=` (special case) because BSRR is write-only. Writing a 1 to a bit performs an action, while writing 0 does nothing, so there is no need to preserve anything.
+
+So, now that we have an understanding of the Bitwise Operators, we can proceed with coding the C program.
+
 ## Step 1 - Clock
 A microcontroller needs a clock to run. If the clock for a peripheral is not enabled, **the registers still exist in memory, but writing to them does nothing**. So before we touch the GPIO, its clock must be enabled.
 
@@ -128,7 +264,7 @@ From the RCC section:
 
 Since our first step is to enable the GPIOC Clock, we need to find the "APB2 peripheral clock enable register", which is `RCC_APB2ENR`. We can see from the picture that above `IOPCEN` is a number "4". That number is what we call "bit".
 
-Now, we defined Bit 4: `IOPCEN` (I/O Port C clock enable). And from the memory map section, we defined that the base address of the RCC is `0x40021000`. From the picture, we can see that the offset of APB2ENR is `0x18`. So:
+Now, we defined Bit 4: `IOPCEN` (I/O Port C clock enable). And from the memory map section, we defined that the base address of the RCC is `0x40021000`. In the `RCC_APB2ENR` section, we can see that its offset is `0x18`. So:
 
 0x40021000 + 0x18 = `0x40021018`
 
