@@ -143,7 +143,7 @@ Decimal: 16. So in our code:
 
 This creates a mask:
 
-`00000000 00000000 00000000 00100000`
+`00000000 00000000 00000000 00010000`
 
 That mask targets bit 4 only.
 
