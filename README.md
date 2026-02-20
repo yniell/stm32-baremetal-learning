@@ -23,4 +23,4 @@ My goal is to deeply understand how microcontroller peripherals work internally 
 - ARM Cortex-M3 Technical Reference Manual
 - STM32F103C8T6 Datasheet
 
-Note: I'm a beginner and this repository is part of my self-learning journey. I would really appreciate it if you could point out any mistakes you may find, and provide me suggestions and improvements.*
+*Note: I'm a beginner and this repository is part of my self-learning journey. I would really appreciate it if you could point out any mistakes you may find, and provide me suggestions and improvements.*
