@@ -483,6 +483,23 @@ Reset_Handler:
     bl main
     b .
 ```
+### Assembler Directives
+`.syntax unified` tells the assembler to use **Unified Assembly Language (UAL)** syntax. UAL works for both ARM and Thumb instruction sets.
+
+`.cpu cortex-m3` specifies the target CPU. This enables correct instruction encoding for Cortex-M3.
+
+`.thumb` Cortex-M processors only execute Thumb instructions (not full ARM mode). This tells the assembler to generate Thumb code.
+
+### Global Symbols
+```
+.global _estack
+.global Reset_Handler
+```
+These symbols are made visible to the linker.
+- `_estack` -> Initial stack pointer value
+- `Reset_Handler` -> Entry point after reset
+
+The linker needs to see these.
 
 ### Initial Stack Pointer
 `_estack = 0x20005000`
