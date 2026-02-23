@@ -66,7 +66,7 @@ volatile uint32_t ms_ticks = 0;
 volatile uint8_t led_state = 0; // 0 = off, 1 = on
 ```
 
-## Step 4 - SysTick interrupt handler
+## Step 5 - SysTick interrupt handler
 This must match the vector table entry. 
 ```
 void SysTick_Handler(void)
@@ -76,7 +76,7 @@ void SysTick_Handler(void)
 ```
 This runs automatically every 1 ms. What happens in the hardware is that when the timer reaches 0, the CPU jumps to this function. The counter increments, and the CPU returns automatically. 
 
-## Step 5 - Add to vector table
+## Step 6 - Add to vector table
 In our `startup.s`, we add:
 
 `.word SysTick_Handler`
@@ -117,8 +117,7 @@ Reset_Handler:
     b .
 ```
 
-## Step 6 - Configure SysTick
-In `main()`:
+## Step 7 - Configure SysTick
 ```
 void systick_init(void)
 {
@@ -135,7 +134,7 @@ void systick_init(void)
 
 *In the ARM documentation, we can see that in `CLKSOURCE`, `0 = external clock` and `1 = processor clock`. The `processor clock` means the core clock (HCLK), which is the clock that drives the Cortex-M3 CPU itself.*
 
-## Step 7 - Replace delay with non-blocking timing
+## Step 8 - Replace delay with non-blocking timing
 The old code uses a blocking timing delay inside `main()`, while the new code separates hardware control into dedicated functions and uses a hardware timer (SysTick) for more accurate, non-blocking timing. 
 
 ```
