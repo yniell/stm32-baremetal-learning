@@ -3,7 +3,7 @@ This section documents my attempt to blink the Blue Pill LED on PC13 using bare-
 
 I am keeping this section as a learning reference, because it highlights important concepts about SysTick, interrupts, vector tables, and register-level programming.
 
-I cannot make it work correctly, so I decided that I will use HAL in a separate folder, which abstracts some of these low-level details while still allowing me to learn about the hardware. If anyone knows why it doesn't work or what I did wrong, I would really appreciate it.
+I cannot make it work correctly, so I decided that I will try to use **libopencm3** in a separate folder, an open-source, low-level firmware library for ARM Cortex-M microcontrollers. If anyone knows why it doesn't work or what I did wrong, I would really appreciate it.
 
 # SysTick
 SysTick is a 24-bit hardware timer inside the ARM Cortex-M core. We can see the ARM documentation here:
@@ -226,5 +226,11 @@ int main(void)
 ```
 ## Conclusion
 When running this code on the Blue Pill (STM32F103C8T6), the LED on PC13 does not turn on. **Essentially, this attempt did not produce a visible LED blink.**
+
+*However*, There is a noteable behavior that I found in running this code. 
+- If a previous program is already running (from my experience, the "blinky" where the LED blinks every 500ms) and we flash this program (systick), it blinks really fast.
+- Pressing reset button clears the behavior, then the LED won't be blinking again.
+- Using `st-flash erase` then run this code again, the LED still won't blink.
+- I tried a working program of blinky with systick using `libopencm3`, then run this code, and the fast blinking is at it again. I am thinking that for the 'weird' fast blinking behavior only activates if there is an existing program then I run this program.
 
 From attempting this LED Blinky with SysTick Interrupt, even if I did not managed to make the PC13 blink, I did understood how hardware timers, registers, and interrupts interact. Configuring the reload values, enabling interrupts, and the matching the vector table. Even a simple 1 ms interrupt depends on correct clock and startup setup. 
